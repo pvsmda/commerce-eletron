@@ -2,6 +2,11 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
+
+import productRouter from "./routes/productRouter";
+import meRouter from "./routes/meRouter";
+import streamRouter from "./routes/streamRouter";
+
 import fs from "node:fs";
 import path from "node:path";
 
@@ -27,6 +32,13 @@ app.use(clerkMiddleware());
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
+
+app.use("/api/me", meRouter);
+app.use("/api/products", productRouter);
+app.use("/api/stream", streamRouter);
+// app.use("/api/checkout", chekoutRouter);
+// app.use("/api/admin", adminRouter);
+// app.use("/api/orders", orderRouter);
 
 const publicDir = path.join(process.cwd(), "public");
 if (fs.existsSync(publicDir)) {
