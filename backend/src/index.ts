@@ -22,6 +22,7 @@ app.use(express.json());
 app.use(cors());
 app.use(clerkMiddleware());
 
+
 const publicDir = path.join(process.cwd(), "public");
 if (fs.existsSync(publicDir)) {
   app.use(express.static(publicDir));
@@ -31,12 +32,15 @@ if (fs.existsSync(publicDir)) {
       next();
       return;
     }
+
     if (req.path.startsWith("/api") || req.path.startsWith("/webhooks")) {
       next();
       return;
     }
+
     res.sendFile(path.join(publicDir, "index.html"), (err) => next(err));
   });
 }
+
 
 app.listen(env.PORT, () => console.log("Listening on port 3001"));
