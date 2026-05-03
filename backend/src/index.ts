@@ -3,9 +3,14 @@ import express from "express";
 import cors from "cors";
 
 
+import * as Sentry from "@sentry/node";
+
 import productRouter from "./routes/productRouter";
 import meRouter from "./routes/meRouter";
 import streamRouter from "./routes/streamRouter";
+import chekoutRouter from "./routes/chekoutRouter";
+
+import { sentryClerkUserMiddleware } from "./middleware/sentryClerkUser";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -33,6 +38,7 @@ app.post("/webhooks/polar", rawJson, (req, res) => {
 app.use(express.json());
 app.use(cors());
 app.use(clerkMiddleware());
+app.use(sentryClerkUserMiddleware);
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
@@ -41,7 +47,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/me", meRouter);
 app.use("/api/products", productRouter);
 app.use("/api/stream", streamRouter);
-// app.use("/api/checkout", chekoutRouter);
+app.use("/api/checkout", chekoutRouter);
 // app.use("/api/admin", adminRouter);
 // app.use("/api/orders", orderRouter);
 
@@ -63,6 +69,21 @@ if (fs.existsSync(publicDir)) {
     res.sendFile(path.join(publicDir, "index.html"), (err) => next(err));
   });
 }
+
+
+// sentry will be attached to the response object
+Sentry.setupExpressErrorHandler(app);
+
+app.use(
+  (_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const sentryId = (res as express.Response & { sentry?: string }).sentry;
+
+    res.status(500).json({
+      error: "Internal server error",
+      ...(sentryId !== undefined && { sentryId }),
+    });
+  },
+);
 
 app.listen(env.PORT, () => {
   console.log("Listening on port:", env.PORT);
